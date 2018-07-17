@@ -1,13 +1,16 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+from threading import *
+from matplotlib.widgets import Button
 
 plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 def computeYByX(x):
     noise = np.random.normal(-100, 100, x.shape)
-    return 400 * np.sin(x) + 2 * x * x + noise
+    #return 400 * np.sin(x) + 2 * x * x #+ noise
+    return 40 * x * x + 1 #+ noise
 
 
 xTrain = np.linspace(-20, 20, 401).reshape([1, -1])
@@ -59,16 +62,32 @@ init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
 
-for time in range(0, 10001):
-	train.run({x: xTrain}, sess)
-	if time % 1000 == 0:
-		plt.clf()
-		plt.plot(xTrain[0], yTrain[0], 'ro', label = 'train data')
-		plt.plot(xTrain[0], y.eval({x: xTrain}, sess)[0], label = 'train data')
-		plt.legend()
-		plt.savefig('curve_fitting_' + str(int(time / 1000)) + '.png', dpi = 200)
+plt.plot(xTrain[0], yTrain[0], 'ro', label = 'train data')
+l, = plt.plot(xTrain[0], y.eval({x: xTrain}, sess)[0], label = 'train data')
+
+def threadtrain():
+	print("training start")
+	for time in range(0, 10001):
+		train.run({x: xTrain}, sess)
+		if time % 1000 == 0:
+			#plt.clf()
+			l.set_xdata(xTrain[0])
+			l.set_ydata(y.eval({x: xTrain}, sess)[0])
+			plt.draw()
+			#plt.legend()
+			#plt.savefig('curve_fitting_' + str(int(time / 1000)) + '.png', dpi = 200)
+	print("training end")
+
+def onclickstart(event):
+	Thread(target = threadtrain).start()
 
 
+axnext = plt.axes([0.9,0.01,0.1,0.075])
+bnext =Button(axnext,'Start')
+bnext.on_clicked(onclickstart)
+plt.show()
+
+'''	
 xTest = np.linspace(-40, 40, 401).reshape([1, -1])
 yTest = computeYByX(xTest)
 
@@ -78,3 +97,4 @@ plt.plot(xTest[0], y.eval({x: xTest}, sess)[0], label = 'curve fitting')
 plt.legend()
 plt.savefig('curve_fitting_test.png', dpi = 200)
 plt.show()
+'''
